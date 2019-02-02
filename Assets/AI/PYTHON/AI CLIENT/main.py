@@ -6,6 +6,10 @@ from PIL import Image
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+import json as json_
+import math
+from collections import deque
+from pprint import pprint
 
 
 def millis():
@@ -19,13 +23,12 @@ def show_png(png_bytes):
         cv2.imshow("img", open_cv_image)
         cv2.waitKey(1)
 
-import math
-from collections import deque
+
 
 start = time_.time()
 
 class RealtimePlot:
-    def __init__(self, axes, max_entries = 100):
+    def __init__(self, axes, max_entries = 1000):
         self.axis_x = deque(maxlen=max_entries)
         self.axis_y = deque(maxlen=max_entries)
         self.axes = axes
@@ -52,12 +55,7 @@ class RealtimePlot:
         
 
 
-if __name__ == "__main__": 
-    fig, axes = plt.subplots()
-    display = RealtimePlot(axes)
-    display.animate(fig, lambda frame_index: (time_.time() - start, 25))
-    plt.show()
-
+if __name__ == "__main__":
     fig, axes = plt.subplots()
     display = RealtimePlot(axes)
 
@@ -77,6 +75,11 @@ if __name__ == "__main__":
         show_png(data)
         # print('Received:', len(data), 'bytes', "Time:", timer)
 
-        display.add(time_.time() - start, 23)
+        data = s.recv(1000000).decode("utf-8")
+        json = json_.loads(data)
+        # pprint(json['CurrentSteering'])
+        
+
+        display.add(time_.time() - start, float(json['CurrentSteering'].replace(",",".")))
         plt.pause(0.001)
     s.close()

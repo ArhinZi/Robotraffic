@@ -114,18 +114,18 @@ public class Server : MonoBehaviour
 
                 //Sending png
                 byte[] data_png = car_controller.PngFromCam;
-                handler.Send(data_png);
+                handler.Send(data_png); 
 
                 //Sending JSON
-                Dictionary<string, float> info = new Dictionary<string, float>
-                {
-                    ["ID"] = 0,
-                    ["CurrentSpeed"] = car_controller.CurrentSpeed,
-                    ["CurrentSteering"] = car_controller.CurrentSteering
-                };
-                //string json = JsonConvert.SerializeObject(info);
-                //byte[] data_json = Encoding.UTF8.GetBytes(json);
-                //handler.Send(data_png);
+                string json = 
+                    "{" +
+                    "\"ID\"" + ":" +              "\""+0.ToString()+"\""+","+
+                    "\"CurrentSpeed\"" + ":" +    "\""+car_controller.CurrentSpeed.ToString()+ "\"" + "," +
+                    "\"CurrentSteering\"" + ":" +  "\""+car_controller.CurrentSteering.ToString()+ "\"" + "" +
+                    "}";
+                Debug.Log(json);
+                byte[] data_json = Encoding.UTF8.GetBytes(json);
+                handler.Send(data_json);
 
                 //// отправляем ответ
                 //string message = "ваше сообщение доставлено";
