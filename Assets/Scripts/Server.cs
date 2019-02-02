@@ -114,15 +114,22 @@ public class Server : MonoBehaviour
 
                 //Sending png
                 byte[] data_png = car_controller.PngFromCam;
-                handler.Send(data_png); 
+                handler.Send(data_png);
 
                 //Sending JSON
-                string json = 
-                    "{" +
-                    "\"ID\"" + ":" +              "\""+0.ToString()+"\""+","+
-                    "\"CurrentSpeed\"" + ":" +    "\""+car_controller.CurrentSpeed.ToString()+ "\"" + "," +
-                    "\"CurrentSteering\"" + ":" +  "\""+car_controller.CurrentSteering.ToString()+ "\"" + "" +
-                    "}";
+                Dictionary<string, string> dict_data = new Dictionary<string, string>
+                {
+                    ["ID"] = 0.ToString(),
+                    ["CurrentSpeed"] = car_controller.CurrentSpeed.ToString(),
+                    ["CurrentSteering"] = car_controller.CurrentSteering.ToString()
+                };
+                //
+                //    "{" +
+                //    "\"ID\"" + ":" +              "\""+0.ToString()+"\""+","+
+                //    "\"CurrentSpeed\"" + ":" +    "\""+car_controller.CurrentSpeed.ToString()+ "\"" + "," +
+                //    "\"CurrentSteering\"" + ":" +  "\""+car_controller.CurrentSteering.ToString()+ "\"" + "" +
+                //    "}";
+                string json = DictToJson(dict_data);
                 Debug.Log(json);
                 byte[] data_json = Encoding.UTF8.GetBytes(json);
                 handler.Send(data_json);
@@ -133,5 +140,25 @@ public class Server : MonoBehaviour
                 //handler.Send(data);
             }
         }
+    }
+
+
+    string DictToJson(Dictionary<string, string> dict)
+    {
+        string json = "";
+        string[] list = new string[dict.Count];
+        json += "{";
+
+        int k = 0;
+        foreach(string i in dict.Keys)
+        {
+            list[k] = string.Format("\"{0}\" : \"{1}\"", i, dict[i]);
+            k++;
+        }
+        json += string.Join(",", list);
+        
+        json += "}";
+
+        return json;
     }
 }
