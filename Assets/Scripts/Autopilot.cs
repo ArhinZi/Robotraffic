@@ -85,16 +85,19 @@ public class Autopilot : MonoBehaviour
             Vector3 obj_pos = controlled_car.gameObject.transform.position;
             Vector3 cam_pos = controlled_car.camera.gameObject.transform.position;
             Vector3 point_pos = points[curr].point.gameObject.transform.position;
+            Vector3 next_point_pos = points[next].point.gameObject.transform.position;
 
             Vector3 LW = controlled_car.truck_Infos[0].leftWheelMesh.gameObject.transform.position;
             Vector3 RW = controlled_car.truck_Infos[0].rightWheelMesh.gameObject.transform.position;
+            float a = Vector2.Angle(new Vector2(cam_pos.x - obj_pos.x, cam_pos.z - obj_pos.z), new Vector2(point_pos.x - obj_pos.x, point_pos.z - obj_pos.z));
+            //float b = Vector2.Angle(new Vector2(cam_pos.x - obj_pos.x, cam_pos.z - obj_pos.z), new Vector2(next_point_pos.x - obj_pos.x, next_point_pos.z - obj_pos.z));
             if (Vector3.Distance(point_pos, LW) >= Vector3.Distance(point_pos, RW))
             {
-                controlled_car.TargetSteering = k * (Vector2.Angle(new Vector2(cam_pos.x - obj_pos.x, cam_pos.z - obj_pos.z), new Vector2(point_pos.x - obj_pos.x, point_pos.z - obj_pos.z)));
+                controlled_car.TargetSteering = k * a;
             }
             else
             {
-                controlled_car.TargetSteering = k * (Vector2.Angle(new Vector2(cam_pos.x - obj_pos.x, cam_pos.z - obj_pos.z), new Vector2(point_pos.x - obj_pos.x, point_pos.z - obj_pos.z)) * -1);
+                controlled_car.TargetSteering = -1 * k * a;
             }
         }
         else

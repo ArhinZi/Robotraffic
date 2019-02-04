@@ -77,7 +77,7 @@ public class Server : MonoBehaviour
                     listenSocket.Bind(ipPoint);
                     listenSocket.Listen(1);
                     connected = true;
-                    Debug.Log("Сервер запущен. Ожидание подключений...");
+                    
                     Application.runInBackground = true;
                     listenerFlag = true;
                     startServer();
@@ -92,52 +92,59 @@ public class Server : MonoBehaviour
 
     void ListenerThread()
     {
-        
-        if (connected)
+        while (true)
         {
-            Socket handler = listenSocket.Accept();
-            Debug.Log("Клиент подключен");
-            while (listenerFlag)
+            try
             {
-                // получаем сообщение
-                StringBuilder builder = new StringBuilder();
-                int bytes = 0; // количество полученных байтов
-                byte[] data = new byte[256]; // буфер для получаемых данных
-                do
+                Debug.Log("Сервер запущен. Ожидание подключений...");
+                Socket handler = listenSocket.Accept();
+                Debug.Log("Клиент подключен");
+                while (listenerFlag)
                 {
-                    bytes = handler.Receive(data);
-                    builder.Append(Encoding.UTF8.GetString(data, 0, bytes));
+                    // получаем сообщение
+                    StringBuilder builder = new StringBuilder();
+                    int bytes = 0; // количество полученных байтов
+                    byte[] data = new byte[256]; // буфер для получаемых данных
+                    do
+                    {
+                        bytes = handler.Receive(data);
+                        builder.Append(Encoding.UTF8.GetString(data, 0, bytes));
+                    }
+                    while (handler.Available > 0);
+
+                    Debug.Log(DateTime.Now.ToShortTimeString() + ": " + builder.ToString());
+
+                    //Sending png
+                    byte[] data_png = car_controller.PngFromCam;
+                    handler.Send(data_png);
+
+                    //Sending JSON
+                    Dictionary<string, string> dict_data = new Dictionary<string, string>
+                    {
+                        ["ID"] = 0.ToString(),
+                        ["CurrentSpeed"] = car_controller.CurrentSpeed.ToString(),
+                        ["CurrentSteering"] = car_controller.CurrentSteering.ToString()
+                    };
+                    //
+                    //    "{" +
+                    //    "\"ID\"" + ":" +              "\""+0.ToString()+"\""+","+
+                    //    "\"CurrentSpeed\"" + ":" +    "\""+car_controller.CurrentSpeed.ToString()+ "\"" + "," +
+                    //    "\"CurrentSteering\"" + ":" +  "\""+car_controller.CurrentSteering.ToString()+ "\"" + "" +
+                    //    "}";
+                    string json = DictToJson(dict_data);
+                    Debug.Log(json);
+                    byte[] data_json = Encoding.UTF8.GetBytes(json);
+                    handler.Send(data_json);
+
+                    //// отправляем ответ
+                    //string message = "ваше сообщение доставлено";
+                    //data = Encoding.UTF8.GetBytes(message);
+                    //handler.Send(data);
                 }
-                while (handler.Available > 0);
-
-                Debug.Log(DateTime.Now.ToShortTimeString() + ": " + builder.ToString());
-
-                //Sending png
-                byte[] data_png = car_controller.PngFromCam;
-                handler.Send(data_png);
-
-                //Sending JSON
-                Dictionary<string, string> dict_data = new Dictionary<string, string>
-                {
-                    ["ID"] = 0.ToString(),
-                    ["CurrentSpeed"] = car_controller.CurrentSpeed.ToString(),
-                    ["CurrentSteering"] = car_controller.CurrentSteering.ToString()
-                };
-                //
-                //    "{" +
-                //    "\"ID\"" + ":" +              "\""+0.ToString()+"\""+","+
-                //    "\"CurrentSpeed\"" + ":" +    "\""+car_controller.CurrentSpeed.ToString()+ "\"" + "," +
-                //    "\"CurrentSteering\"" + ":" +  "\""+car_controller.CurrentSteering.ToString()+ "\"" + "" +
-                //    "}";
-                string json = DictToJson(dict_data);
-                Debug.Log(json);
-                byte[] data_json = Encoding.UTF8.GetBytes(json);
-                handler.Send(data_json);
-
-                //// отправляем ответ
-                //string message = "ваше сообщение доставлено";
-                //data = Encoding.UTF8.GetBytes(message);
-                //handler.Send(data);
+            }
+            catch(SocketException e)
+            {
+                Debug.Log(e.Message);
             }
         }
     }
