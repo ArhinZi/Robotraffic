@@ -64,8 +64,12 @@ def ConnectBySocket(host, port):
     s.connect((host, port))
     return s
 
+def nothing(x):
+    pass
 
 start = time_.time()
+
+
 
 if __name__ == "__main__":
     
@@ -75,20 +79,25 @@ if __name__ == "__main__":
     s = ConnectBySocket('localhost', 9090)
     
     last_time = 0
-    while True:
-        time_.sleep(0.001)
-        # print("Sending")
+
+    cv2.namedWindow("Main", cv2.WINDOW_NORMAL)
+    cv2.createTrackbar('k1','Main',0,24,nothing)
+    flag = True
+    while flag:
         last_time = millis()
         s.send('Request Data'.encode("utf-8"))
         data = s.recv(1000000)
 
-        timer = millis()-last_time
         image = png_bytes_2_opencv_image(data)
-        cf = ComputerFinder(image)
-        cf.show("original", cf.original)
-        cf.show("gray", cf.gray)
-        cf.show("th", cf.findPath(cf.threshold(cf.gray)))
         
+        cf = ComputerFinder(image)
+
+        coords = cf.findPath(cf.threshold(cf.gray))
+        flag = cf.show("Main", cf.drawPoints(image, coords))
+
+        timer = millis()-last_time
+        # print(timer)
+
         data = s.recv(1000000)
         try:
             decoded_data = data.decode("utf-8")
@@ -98,5 +107,7 @@ if __name__ == "__main__":
             plt.pause(0.0001)
         except Exception as e:
             print(e)
+        
+        # input()
 
     s.close()
