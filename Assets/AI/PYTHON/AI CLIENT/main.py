@@ -12,6 +12,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from PIL import Image
 
+from ComputerFinder import ComputerFinder
+
 
 def millis():
     return int(round(time_.time() * 1000))
@@ -27,15 +29,6 @@ def png_bytes_2_opencv_image(png_bytes):
     return open_cv_image
 
 
-def show_img_in_window(name, image):
-    try:
-        cv2.imshow(name, image)
-        cv2.waitKey(1)
-    except:
-        pass
-
-
-start = time_.time()
 
 
 class RealtimePlot:
@@ -71,7 +64,11 @@ def ConnectBySocket(host, port):
     s.connect((host, port))
     return s
 
+
+start = time_.time()
+
 if __name__ == "__main__":
+    
     fig, axes = plt.subplots()
     display = RealtimePlot(axes)
 
@@ -79,7 +76,7 @@ if __name__ == "__main__":
     
     last_time = 0
     while True:
-        time_.sleep(0.01)
+        time_.sleep(0.001)
         # print("Sending")
         last_time = millis()
         s.send('Request Data'.encode("utf-8"))
@@ -87,7 +84,10 @@ if __name__ == "__main__":
 
         timer = millis()-last_time
         image = png_bytes_2_opencv_image(data)
-        show_img_in_window("Original", image)
+        cf = ComputerFinder(image)
+        cf.show("original", cf.original)
+        cf.show("gray", cf.gray)
+        cf.show("th", cf.findPath(cf.threshold(cf.gray)))
         
         data = s.recv(1000000)
         try:
@@ -95,8 +95,8 @@ if __name__ == "__main__":
             json = json_.loads(decoded_data)
             display.add(time_.time() - start,
                         float(json['CurrentSteering'].replace(",", ".")))
-            plt.pause(0.001)
+            plt.pause(0.0001)
         except Exception as e:
-            print(e.value)
+            print(e)
 
     s.close()
