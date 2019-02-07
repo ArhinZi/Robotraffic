@@ -29,8 +29,6 @@ def png_bytes_2_opencv_image(png_bytes):
     return open_cv_image
 
 
-
-
 class RealtimePlot:
     def __init__(self, axes, max_entries=1000):
         self.axis_x = deque(maxlen=max_entries)
@@ -59,55 +57,84 @@ class RealtimePlot:
             return self.lineplot
         animation.FuncAnimation(figure, wrapper, interval=interval)
 
+
 def ConnectBySocket(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((host, port))
     return s
 
+
 def nothing(x):
     pass
+
 
 start = time_.time()
 
 
-
 if __name__ == "__main__":
-    
-    fig, axes = plt.subplots()
-    display = RealtimePlot(axes)
+
+    # fig, axes = plt.subplots()
+    # display = RealtimePlot(axes)
 
     s = ConnectBySocket('localhost', 9090)
-    
+
     last_time = 0
 
     cv2.namedWindow("Main", cv2.WINDOW_NORMAL)
-    cv2.createTrackbar('k1','Main',0,24,nothing)
+    cv2.createTrackbar('k1', 'Main', 0, 10, nothing)
+    cv2.createTrackbar('k2', 'Main', 0, 10, nothing)
     flag = True
     while flag:
         last_time = millis()
+
+        # Request for photo
         s.send('Request Data'.encode("utf-8"))
+
+        # Recieve photo
         data = s.recv(1000000)
-
         image = png_bytes_2_opencv_image(data)
-        
-        cf = ComputerFinder(image)
 
+        cf = ComputerFinder(image)
         coords = cf.findPath(cf.threshold(cf.gray))
         flag = cf.show("Main", cf.drawPoints(image, coords))
 
         timer = millis()-last_time
         # print(timer)
 
+        # Recieve state
         data = s.recv(1000000)
         try:
             decoded_data = data.decode("utf-8")
-            json = json_.loads(decoded_data)
-            display.add(time_.time() - start,
-                        float(json['CurrentSteering'].replace(",", ".")))
-            plt.pause(0.0001)
+            # json = json_.loads(decoded_data)
+            # display.add(time_.time() - start,
+            #             float(json['CurrentSteering'].replace(",", ".")))
+            # plt.pause(0.0001)
         except Exception as e:
             print(e)
-        
+
+        #Calculate commands
+        target_steering = 0
+        try:
+            target_steering = (coords[0][0] - 64)
+        except Exception as e:
+            print(e)
+
+        # Send control commands
+        sdict = {
+            "speed" : cv2.getTrackbarPos('k1','Main'),
+            "steering" : target_steering
+        }
+        json = json_.dumps(sdict, sort_keys=True)
+        s.send(json.encode("utf-8"))
+
+        #Recieve response
+        data = s.recv(1000000)
+        try:
+            decoded_data = data.decode("utf-8")
+            print(decoded_data)
+        except Exception as e:
+            print(e)
+
         # input()
 
     s.close()

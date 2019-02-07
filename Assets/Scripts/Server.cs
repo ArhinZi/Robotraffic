@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System;
 using System.Text;
 
+
 public class Server : MonoBehaviour
 {
     static int port = 9090;
@@ -54,6 +55,9 @@ public class Server : MonoBehaviour
         SocketThread = new System.Threading.Thread(ListenerThread);
         SocketThread.IsBackground = true;
         SocketThread.Start();
+
+        car_controller.UnderAI = true;
+
     }
 
     // Update is called once per frame
@@ -101,7 +105,7 @@ public class Server : MonoBehaviour
                 Debug.Log("Клиент подключен");
                 while (listenerFlag)
                 {
-                    // получаем сообщение
+                    //Recieve request
                     StringBuilder builder = new StringBuilder();
                     int bytes = 0; // количество полученных байтов
                     byte[] data = new byte[256]; // буфер для получаемых данных
@@ -111,8 +115,7 @@ public class Server : MonoBehaviour
                         builder.Append(Encoding.UTF8.GetString(data, 0, bytes));
                     }
                     while (handler.Available > 0);
-
-                    Debug.Log(DateTime.Now.ToShortTimeString() + ": " + builder.ToString());
+                    Debug.Log(builder.ToString());
 
                     //Sending png
                     byte[] data_png = car_controller.PngFromCam;
@@ -125,21 +128,32 @@ public class Server : MonoBehaviour
                         ["CurrentSpeed"] = car_controller.CurrentSpeed.ToString(),
                         ["CurrentSteering"] = car_controller.CurrentSteering.ToString()
                     };
-                    //
-                    //    "{" +
-                    //    "\"ID\"" + ":" +              "\""+0.ToString()+"\""+","+
-                    //    "\"CurrentSpeed\"" + ":" +    "\""+car_controller.CurrentSpeed.ToString()+ "\"" + "," +
-                    //    "\"CurrentSteering\"" + ":" +  "\""+car_controller.CurrentSteering.ToString()+ "\"" + "" +
-                    //    "}";
-                    string json = DictToJson(dict_data);
+                    string json = MiniJSON.Json.Serialize(dict_data);
                     Debug.Log(json);
                     byte[] data_json = Encoding.UTF8.GetBytes(json);
                     handler.Send(data_json);
 
-                    //// отправляем ответ
-                    //string message = "ваше сообщение доставлено";
-                    //data = Encoding.UTF8.GetBytes(message);
-                    //handler.Send(data);
+                    //Recieve datas
+                    builder = new StringBuilder();
+                    bytes = 0; // количество полученных байтов
+                    data = new byte[256]; // буфер для получаемых данных
+                    do
+                    {
+                        bytes = handler.Receive(data);
+                        builder.Append(Encoding.UTF8.GetString(data, 0, bytes));
+                    }
+                    while (handler.Available > 0);
+                    var json2 = builder.ToString();
+                    var dict = MiniJSON.Json.Deserialize(json2) as Dictionary<string, object>;
+                    car_controller.TargetSpeed = Convert.ToInt32(dict["speed"]);
+                    car_controller.TargetSteering = Convert.ToInt32(dict["steering"]);
+                    Debug.Log(car_controller.TargetSteering);
+
+                    //Send answer
+                    string resp = "OK";
+                    data_json = Encoding.UTF8.GetBytes(resp);
+                    handler.Send(data_json);
+
                 }
             }
             catch(SocketException e)
