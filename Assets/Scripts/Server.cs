@@ -8,8 +8,8 @@ using System.Text;
 
 public class Server : MonoBehaviour
 {
-    static int port = 9090;
-    static string addr = "127.0.0.1";
+    static int port = 1025;
+    static string addr = "192.168.0.107";
 
     Socket listenSocket;
     bool connected = false;
@@ -103,6 +103,7 @@ public class Server : MonoBehaviour
                 Debug.Log("Сервер запущен. Ожидание подключений...");
                 Socket handler = listenSocket.Accept();
                 Debug.Log("Клиент подключен");
+                Debug.Log(handler.RemoteEndPoint);
                 while (listenerFlag)
                 {
                     //Recieve request
@@ -125,8 +126,8 @@ public class Server : MonoBehaviour
                     Dictionary<string, string> dict_data = new Dictionary<string, string>
                     {
                         ["ID"] = 0.ToString(),
-                        ["CurrentSpeed"] = car_controller.CurrentSpeed.ToString(),
-                        ["CurrentSteering"] = car_controller.CurrentSteering.ToString()
+                        ["CurrentSpeed"] = Math.Round(car_controller.CurrentSpeed, 1).ToString(),
+                        ["CurrentSteering"] = Math.Round(car_controller.CurrentSteering, 1).ToString()
                     };
                     string json = MiniJSON.Json.Serialize(dict_data);
                     Debug.Log(json);
@@ -143,11 +144,15 @@ public class Server : MonoBehaviour
                         builder.Append(Encoding.UTF8.GetString(data, 0, bytes));
                     }
                     while (handler.Available > 0);
-                    var json2 = builder.ToString();
-                    var dict = MiniJSON.Json.Deserialize(json2) as Dictionary<string, object>;
-                    car_controller.TargetSpeed = Convert.ToInt32(dict["speed"]);
-                    car_controller.TargetSteering = Convert.ToInt32(dict["steering"]);
-                    Debug.Log(car_controller.TargetSteering);
+                    try
+                    {
+                        var json2 = builder.ToString();
+                        var dict = MiniJSON.Json.Deserialize(json2) as Dictionary<string, object>;
+                        car_controller.TargetSpeed = Convert.ToInt32(dict["speed"]);
+                        car_controller.TargetSteering = Convert.ToInt32(dict["steering"]);
+                        Debug.Log(car_controller.TargetSteering);
+                    }
+                    catch { }
 
                     //Send answer
                     string resp = "OK";

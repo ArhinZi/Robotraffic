@@ -1,7 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import io
 import json as json_
 import math
 import socket
+import threading
 import sys
 import time as time_
 from collections import deque
@@ -21,41 +24,12 @@ def millis():
 
 def png_bytes_2_opencv_image(png_bytes):
     imageStream = io.BytesIO(png_bytes)
-    arr = np.array(Image.open(imageStream))
     try:
+        arr = np.array(Image.open(imageStream))
         open_cv_image = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
     except:
         return None
     return open_cv_image
-
-
-class RealtimePlot:
-    def __init__(self, axes, max_entries=1000):
-        self.axis_x = deque(maxlen=max_entries)
-        self.axis_y = deque(maxlen=max_entries)
-        self.axes = axes
-        self.max_entries = max_entries
-
-        self.lineplot, = axes.plot([], [], "ro-")
-        self.axes.set_autoscaley_on(True)
-
-    def add(self, x, y):
-        self.axis_x.append(x)
-        self.axis_y.append(y)
-        self.lineplot.set_data(self.axis_x, self.axis_y)
-        self.axes.set_xlim(self.axis_x[0], self.axis_x[-1] + 1e-15)
-        self.axes.relim()
-        self.axes.autoscale_view()  # rescale the y-axis
-
-    def animate(self, figure, callback, interval=50):
-        import matplotlib.animation as animation
-
-        def wrapper(frame_index):
-            self.add(*callback(frame_index))
-            self.axes.relim()
-            self.axes.autoscale_view()  # rescale the y-axis
-            return self.lineplot
-        animation.FuncAnimation(figure, wrapper, interval=interval)
 
 
 def ConnectBySocket(host, port):
@@ -67,22 +41,13 @@ def ConnectBySocket(host, port):
 def nothing(x):
     pass
 
-
-start = time_.time()
-
-
-if __name__ == "__main__":
-
-    # fig, axes = plt.subplots()
-    # display = RealtimePlot(axes)
-
+def main(show_window = False):
     s = ConnectBySocket('localhost', 9090)
-
+    start = time_.time()
     last_time = 0
-
-    cv2.namedWindow("Main", cv2.WINDOW_NORMAL)
-    cv2.createTrackbar('k1', 'Main', 0, 10, nothing)
-    cv2.createTrackbar('k2', 'Main', 0, 10, nothing)
+    if(show_window):
+        cv2.namedWindow("Main", cv2.WINDOW_NORMAL)
+        cv2.createTrackbar('speed', 'Main', 0, 50, nothing)
     flag = True
     while flag:
         last_time = millis()
@@ -93,41 +58,41 @@ if __name__ == "__main__":
         # Recieve photo
         data = s.recv(1000000)
         image = png_bytes_2_opencv_image(data)
-
         cf = ComputerFinder(image)
         coords = cf.findPath(cf.threshold(cf.gray))
-        flag = cf.show("Main", cf.drawPoints(image, coords))
-
-        timer = millis()-last_time
-        # print(timer)
-
+        
         # Recieve state
         data = s.recv(1000000)
+        state = {}
         try:
             decoded_data = data.decode("utf-8")
-            # json = json_.loads(decoded_data)
-            # display.add(time_.time() - start,
-            #             float(json['CurrentSteering'].replace(",", ".")))
-            # plt.pause(0.0001)
+            state = json_.loads(decoded_data)
         except Exception as e:
-            print(e)
+            print(e,"78")
 
-        #Calculate commands
+        # Calculate commands
         target_steering = 0
-        try:
-            target_steering = (coords[0][0] - 64)
-        except Exception as e:
-            print(e)
+        k = 0
+        if( coords is not None):
+            for i in coords[:int(len(coords)/2)]:
+                target_steering += i[0]
+                k += 1
+        
+            if(k != 0):
+                target_steering = int(target_steering/k)-64
+        # target_speed = cv2.getTrackbarPos('speed', 'Main')
+        target_speed = 0
+
 
         # Send control commands
         sdict = {
-            "speed" : cv2.getTrackbarPos('k1','Main'),
-            "steering" : target_steering
+            "speed": target_speed,
+            "steering": target_steering
         }
         json = json_.dumps(sdict, sort_keys=True)
         s.send(json.encode("utf-8"))
 
-        #Recieve response
+        # Recieve response
         data = s.recv(1000000)
         try:
             decoded_data = data.decode("utf-8")
@@ -135,6 +100,22 @@ if __name__ == "__main__":
         except Exception as e:
             print(e)
 
+        timer = millis()-last_time
+        if(show_window):
+            img = cf.drawPoints(image, coords)
+            if(state != {}):
+                cv2.putText(img,'speed:'+state["CurrentSpeed"],(0,20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1,(0,0,0),1,cv2.LINE_AA)
+                cv2.putText(img,'steering:'+state["CurrentSteering"],(0,40), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1,(0,0,0),1,cv2.LINE_AA)
+
+            flag = cf.show("Main", img)
         # input()
 
     s.close()
+
+
+
+
+if __name__ == "__main__":
+    t = threading.Thread(target=main, args=(True,))
+    t.daemon = False
+    t.start()

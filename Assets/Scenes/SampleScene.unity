@@ -917,17 +917,17 @@ PrefabInstance:
     - target: {fileID: 1360003207504075310, guid: 7ed7e8927cff3f647956a4d4557b791f,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -12.5
+      value: 40.5
       objectReference: {fileID: 0}
     - target: {fileID: 1360003207504075310, guid: 7ed7e8927cff3f647956a4d4557b791f,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.36
+      value: 2.1
       objectReference: {fileID: 0}
     - target: {fileID: 1360003207504075310, guid: 7ed7e8927cff3f647956a4d4557b791f,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 44.3
+      value: -3.1
       objectReference: {fileID: 0}
     - target: {fileID: 1360003207504075310, guid: 7ed7e8927cff3f647956a4d4557b791f,
         type: 3}
@@ -972,7 +972,7 @@ PrefabInstance:
     - target: {fileID: 1360003207402726846, guid: 7ed7e8927cff3f647956a4d4557b791f,
         type: 3}
       propertyPath: maxMotorTorque
-      value: 1000
+      value: 10000
       objectReference: {fileID: 0}
     - target: {fileID: 1360003207402726846, guid: 7ed7e8927cff3f647956a4d4557b791f,
         type: 3}

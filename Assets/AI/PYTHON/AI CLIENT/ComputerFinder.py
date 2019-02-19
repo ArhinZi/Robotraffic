@@ -8,6 +8,7 @@ class ComputerFinder:
     res = None
 
     def __init__(self, img, target_size=128):
+        print(111)
         if(img is not None):
             self.original = cv2.resize(img, (target_size, target_size))
             self.gray = cv2.cvtColor(self.original, cv2.COLOR_BGR2GRAY)
