@@ -44,23 +44,29 @@ def nothing(x):
 def main(show_window = False):
     s = ConnectBySocket('localhost', 9090)
     start = time_.time()
-    last_time = 0
     if(show_window):
         cv2.namedWindow("Main", cv2.WINDOW_NORMAL)
-        cv2.createTrackbar('speed', 'Main', 0, 50, nothing)
+        cv2.createTrackbar('speed', 'Main', 0, 15, nothing)
     flag = True
+    last_ts = None
     while flag:
-        last_time = millis()
+        
 
         # Request for photo
         s.send('Request Data'.encode("utf-8"))
 
         # Recieve photo
         data = s.recv(1000000)
+
+        #last_time = millis()
         image = png_bytes_2_opencv_image(data)
-        cf = ComputerFinder(image)
-        coords = cf.findPath(cf.threshold(cf.gray))
+        cf = ComputerFinder(image,128)
+        cf.debug = True
+        #last_time2 = millis()
+        coords = cf.findPath(cf.threshold(cf.gray_img), 0.7, 0.94, 1.3, 0.4, 5, 40, 2, 2)
         
+        cf.show("black", cf.threshold(cf.gray_img))
+
         # Recieve state
         data = s.recv(1000000)
         state = {}
@@ -80,8 +86,14 @@ def main(show_window = False):
         
             if(k != 0):
                 target_steering = int(target_steering/k)-64
-        # target_speed = cv2.getTrackbarPos('speed', 'Main')
-        target_speed = 0
+                if(last_ts is not None):
+                    #target_steering  = int((target_steering+last_ts)/2)
+                    for z in range(2):
+                        target_steering = (last_ts+target_steering)/2
+                        #print(last_ts, target_steering)
+                    target_steering = int(target_steering*0.8)
+                    #print("---------")
+        target_speed = cv2.getTrackbarPos('speed', 'Main')
 
 
         # Send control commands
@@ -96,11 +108,10 @@ def main(show_window = False):
         data = s.recv(1000000)
         try:
             decoded_data = data.decode("utf-8")
-            print(decoded_data)
+            #print(decoded_data)
         except Exception as e:
             print(e)
 
-        timer = millis()-last_time
         if(show_window):
             img = cf.drawPoints(image, coords)
             if(state != {}):
@@ -109,6 +120,7 @@ def main(show_window = False):
 
             flag = cf.show("Main", img)
         # input()
+        last_ts = target_steering
 
     s.close()
 

@@ -8,8 +8,8 @@ using System.Text;
 
 public class Server : MonoBehaviour
 {
-    static int port = 1025;
-    static string addr = "192.168.0.107";
+    static int port = 9090;
+    static string addr = "127.0.0.1";
 
     Socket listenSocket;
     bool connected = false;
@@ -100,6 +100,7 @@ public class Server : MonoBehaviour
         {
             try
             {
+                car_controller.TargetSpeed = 0;
                 Debug.Log("Сервер запущен. Ожидание подключений...");
                 Socket handler = listenSocket.Accept();
                 Debug.Log("Клиент подключен");
