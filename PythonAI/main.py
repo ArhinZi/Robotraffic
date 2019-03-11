@@ -119,10 +119,60 @@ def main(show_window = False):
 
     s.close()
 
+def main2():
+    s = ConnectBySocket('localhost', 9090)
+    start = time_.time()
+    flag = True
+    while flag:
+        
+
+        # Request for photo
+        s.send('Request Data'.encode("utf-8"))
+
+        # Recieve photo
+        data = s.recv(1000000)
+
+        #last_time = millis()
+        image = png_bytes_2_opencv_image(data)
+        cf = ComputerFinder(image,128)
+        cf.debug = True
+        #last_time2 = millis()
+        coords = cf.findPath2(cf.threshold(cf.gray_img), flatten_threshold=0.7, perspective_k = 0.94, min_w=5, max_w=50, h=2, step=2)
+
+        # Recieve state
+        data = s.recv(1000000)
+        state = {}
+        try:
+            decoded_data = data.decode("utf-8")
+            state = json_.loads(decoded_data)
+        except Exception as e:
+            print(e,"78")
+
+        # Send control commands
+        sdict = {
+            "speed": 5,
+            "steering": 0
+        }
+        json = json_.dumps(sdict, sort_keys=True)
+        s.send(json.encode("utf-8"))
+
+        # Recieve response
+        data = s.recv(1000000)
+        try:
+            decoded_data = data.decode("utf-8")
+            #print(decoded_data)
+        except Exception as e:
+            print(e)
+        
+        flag = cf.show("Main", cf.original)
+        # input()
+
+    s.close()
 
 
 
 if __name__ == "__main__":
-    t = threading.Thread(target=main, args=(True,))
-    t.daemon = False
-    t.start()
+    #t = threading.Thread(target=main, args=(True,))
+    #t.daemon = False
+    #t.start()
+    main2()

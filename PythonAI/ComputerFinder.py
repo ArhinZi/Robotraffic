@@ -2,6 +2,16 @@ import cv2
 import numpy as np
 
 
+class Node:
+    coords = [0, 0]
+    parent = None
+    child = None
+    line = None
+
+    def __init__(self, coords, line):
+        self.coords = coords
+        self.line = line
+
 class ComputerFinder:
     debug = False
     original = None
@@ -35,6 +45,90 @@ class ComputerFinder:
             th2 = cv2.adaptiveThreshold(
                 img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, C, dst)
         return th2
+
+    def _setRightChildsToTree(self, node, childs, params):
+        if(node.child is None):
+            for child in childs:
+                if(
+                    params["min_w"] < child.coords[1]-child.coords[0] < params["max_w"] and
+                    node.coords[0] < ((child.coords[0]+child.coords[1])/2) < node.coords[1] and
+                    node.coords[1]-node.coords[0] >= child.coords[1]-child.coords[0]
+                    ):
+                    node.child = child
+                    break
+        else:
+            self._setRightChildsToTree(node.child, childs, params)
+
+    def drawTree(self, node, img):
+        tl = (node.coords[0]*self.mult, (self.size - node.line)*self.mult-2)
+        br = (node.coords[1]*self.mult, (self.size - node.line)*self.mult)
+        cv2.rectangle(img, tl, br, (0,0,255), thickness=1, lineType=8, shift=0)
+        #self.show("asdads", img)
+        if(node.child is not None):
+            self.drawTree(node.child, img)
+
+    def findPath2(self, timg, flatten_threshold=0.7, perspective_k = 0.94, min_w=5, max_w=50, h=2, step=2):
+        if(timg is not None):
+            original_node = Node([0,self.size], 0)
+
+            #foreach in discrete lines with the set height in image
+            for l in range(0, int(self.size/h), step):
+
+            #flattening the line to 1 pixel
+                
+                line_array = np.zeros(self.size)    
+
+                #foreach in pixels in line
+                for i in range(0, self.size):
+
+                    #height of black part of line by height
+                    hs = 0 
+                    
+                    #foreach in pixels by height in the line
+                    for j in range(self.size-h*(l+1), self.size - h*l):
+                        if(timg[j, i] == 0):
+                            hs += 1
+                    
+                    if(hs/h >= flatten_threshold):
+                        line_array[i] = 1
+                    else:
+                        line_array[i] = 0
+
+            #creating potential childs
+                
+                potential_childs = []
+
+                start_x = None
+                width = None
+                for i in range(len(line_array)):
+                    if(line_array[i] == 1):
+                        if(start_x is None):
+                            start_x = i
+                            width = 0
+                        else:
+                            width += 1
+
+                    if(line_array[i] == 0):
+                        if(start_x is None):
+                            pass
+                        else:
+                            node = Node([start_x,start_x+width], l*step+(self.size%h))
+                            potential_childs.append(node)
+                            start_x = None
+                            width = None
+                
+
+            #finding right childs
+                params = {"min_w":min_w, "max_w":max_w}
+                self._setRightChildsToTree(original_node, potential_childs, params)
+
+            img = self.original.copy()
+            self.drawTree(original_node, img)
+            self.show("asdads", img)
+            
+
+            return original_node
+
 
     def findPath(self, timg, threshold=0.7, perspective_k = 0.94, next_max_width_k = 1.2, next_max_center_k = 0.4, min_w=5, max_w=50, h=2, step=2):
         if(timg is not None):
