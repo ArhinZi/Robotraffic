@@ -5,7 +5,7 @@ import numpy as np
 class Node:
     coords = [0, 0]
     parent = None
-    child = None
+    childs = []
     line = None
 
     def __init__(self, coords, line):
@@ -46,30 +46,26 @@ class ComputerFinder:
                 img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, C, dst)
         return th2
 
-    def _setRightChildsToTree(self, node, childs, params):
-        if(node.child is None):
-            for child in childs:
-                if(
-                    params["min_w"] < child.coords[1]-child.coords[0] < params["max_w"] and
-                    node.coords[0] < ((child.coords[0]+child.coords[1])/2) < node.coords[1] and
-                    node.coords[1]-node.coords[0] >= child.coords[1]-child.coords[0]
-                    ):
-                    node.child = child
-                    break
-        else:
-            self._setRightChildsToTree(node.child, childs, params)
+    def drawTree(self, img, tree, n, m):
+        for i in reversed(range(m)):
+            for j in range(n):
+                if(tree[i][j] is not None):
+                    tl = (tree[i][j].coords[0]*self.mult, (self.size - tree[i][j].line)*self.mult-2)
+                    br = (tree[i][j].coords[1]*self.mult, (self.size - tree[i][j].line)*self.mult)
+                    cv2.rectangle(img, tl, br, (0,0,255), thickness=1, lineType=8, shift=0)
 
-    def drawTree(self, node, img):
-        tl = (node.coords[0]*self.mult, (self.size - node.line)*self.mult-2)
-        br = (node.coords[1]*self.mult, (self.size - node.line)*self.mult)
-        cv2.rectangle(img, tl, br, (0,0,255), thickness=1, lineType=8, shift=0)
-        #self.show("asdads", img)
-        if(node.child is not None):
-            self.drawTree(node.child, img)
+                    if(tree[i][j].parent is not None):
+                        parent = tree[i][j].parent
+                        p = (tree[parent[0]][parent[1]].coords[0]*self.mult, (self.size - tree[parent[0]][parent[1]].line)*self.mult-2)
+                        cv2.line(img,tl,p,(255,0,0), thickness=1, lineType=8, shift=0)
 
     def findPath2(self, timg, flatten_threshold=0.7, perspective_k = 0.94, min_w=5, max_w=50, h=2, step=2):
         if(timg is not None):
-            original_node = Node([0,self.size], 0)
+            n = int(self.size/min_w)
+            m = int(self.size/h)
+            tree = [[None]*n]*m
+            tree = np.array(tree)
+            tree[0][0] = Node([0,self.size], 0)
 
             #foreach in discrete lines with the set height in image
             for l in range(0, int(self.size/h), step):
@@ -119,15 +115,40 @@ class ComputerFinder:
                 
 
             #finding right childs
-                params = {"min_w":min_w, "max_w":max_w}
-                self._setRightChildsToTree(original_node, potential_childs, params)
+
+                for child in potential_childs:
+                    b_flag = False
+                    for i in reversed(range(m)):
+                        for j in range(n):
+                            if(
+                                tree[i][j] is not None and
+                                min_w < child.coords[1]-child.coords[0] < max_w and
+                                tree[i][j].coords[0] < ((child.coords[0]+child.coords[1])/2) < tree[i][j].coords[1] and
+                                tree[i][j].coords[1]-tree[i][j].coords[0] >= child.coords[1]-child.coords[0] and
+                                tree[i][j].line <= child.line
+                                ):
+
+                                child_i = i+1
+                                child_j = 0
+                                for pos in range(n):
+                                    if(tree[i+1][pos] is None):
+                                        child_j = pos
+                                        break
+
+                                child.parent = [i,j]
+                                tree[child_i][child_j] = child
+
+                                tree[i][j].childs.append([child_i, child_j])
+
+                                b_flag = True
+                                break
+                        if(b_flag):
+                            break
 
             img = self.original.copy()
-            self.drawTree(original_node, img)
-            self.show("asdads", img)
-            
-
-            return original_node
+            self.drawTree(img, tree, n, m)
+            self.show("asda", img)
+            return 1;
 
 
     def findPath(self, timg, threshold=0.7, perspective_k = 0.94, next_max_width_k = 1.2, next_max_center_k = 0.4, min_w=5, max_w=50, h=2, step=2):
