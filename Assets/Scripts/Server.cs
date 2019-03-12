@@ -150,7 +150,7 @@ public class Server : MonoBehaviour
                         var json2 = builder.ToString();
                         var dict = MiniJSON.Json.Deserialize(json2) as Dictionary<string, object>;
                         car_controller.TargetSpeed = Convert.ToInt32(dict["speed"]);
-                        //car_controller.TargetSteering = Convert.ToInt32(dict["steering"]);
+                        car_controller.TargetSteering = Convert.ToInt32(dict["steering"]);
                         Debug.Log(car_controller.TargetSteering);
                     }
                     catch { }
