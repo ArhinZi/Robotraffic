@@ -36,7 +36,7 @@ class ComputerFinder:
                 img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, C, dst)
         return th2
 
-    def findPath(self, timg, threshold=0.7, perspective_k = 0.94, next_max_width_k = 1.2, next_max_center_k = 0.4, min_w=5, max_w=50, h=2, step=2):
+    def findPath(self, timg, threshold=0.7, perspective_k = 0.94, next_max_width_k = 1.1, next_max_center_k = 0.4, min_w=5, max_w=50, h=2, step=2):
         if(timg is not None):
             mass = [{"coords": [0, 0], "widths": [0, 0]}
                 for x in range(int(self.size/h))]
@@ -67,13 +67,6 @@ class ComputerFinder:
                         if(hs/h > threshold and (not b_flag)):
                             width += 1
 
-                            if(
-                                l-step > 0 and
-                                (width >= mass[l-step]["widths"][1] * perspective_k and
-                                (mass[l-step]["widths"][0]+width*next_max_center_k < int(start_w + width/2) < mass[l-step]["widths"][0]+mass[l-step]["widths"][1]-width*next_max_center_k))
-                            ):
-                                b_flag = True
-
                         else:
                             if(max_w > width > min_w and start_w != 0):
                                 if((l-step > 0 and width > mass[l-step]["widths"][1]*next_max_width_k and mass[l-step]["widths"][1] > 10)):
@@ -82,7 +75,6 @@ class ComputerFinder:
                                 flag = False #flag for save
                                 if(
                                     (l-step >= 0 and (mass[l-step]["widths"][0]+width*next_max_center_k < int(start_w + width/2) < mass[l-step]["widths"][0]+mass[l-step]["widths"][1]-width*next_max_center_k)) or
-                                    b_flag or
                                     l == 0
                                 ):
 
@@ -111,8 +103,7 @@ class ComputerFinder:
                             else:
                                 pass
                             start_w += width
-                            width = 1
-                            b_flag = False          
+                            width = 1         
             if(self.debug):
                 d_img = self.original.copy()
                 for k in range(int(self.size/h)):

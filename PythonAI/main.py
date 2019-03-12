@@ -61,10 +61,11 @@ def main(show_window = False):
 
         #last_time = millis()
         image = png_bytes_2_opencv_image(data)
-        cf = ComputerFinder(image,128)
+        cf = ComputerFinder(image,64)
         cf.debug = True
-        #last_time2 = millis()
-        coords = cf.findPath(cf.threshold(cf.gray_img), 0.7, 0.94, 1.3, 0.4, 5, 40, 2, 2)
+        #last_time = millis()
+        coords = cf.findPath(cf.threshold(cf.gray_img), threshold=0.7, perspective_k = 0.99, next_max_width_k = 1.1, next_max_center_k = 0.1, min_w=2, max_w=15, h=3, step=1)
+        #print(millis()-last_time)
 
         # Recieve state
         data = s.recv(1000000)
@@ -84,11 +85,11 @@ def main(show_window = False):
                 k += 1
         
             if(k != 0):
-                target_steering = int(target_steering/k)-64
+                target_steering = int(target_steering/k)-32
                 if(last_ts is not None):
-                    for z in range(2):
+                    for z in range(1):
                         target_steering = (last_ts+target_steering)/2
-                    target_steering = int(target_steering*0.8)
+                    target_steering = int(target_steering*1)
         target_speed = cv2.getTrackbarPos('speed', 'Main')
 
         # Send control commands
