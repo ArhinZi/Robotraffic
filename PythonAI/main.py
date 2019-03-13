@@ -45,6 +45,8 @@ def main():
     s = ConnectBySocket('localhost', 9090)
     flag = True
     ls = 0
+    cv2.namedWindow("Main")
+    cv2.createTrackbar('speed', 'Main', 0, 15, nothing)
     while flag:
         
         # Request for photo
@@ -58,7 +60,7 @@ def main():
         cf = ComputerFinder.ComputerFinder(image,64)
         cf.debug = True
         last_time = millis()
-        h = 4
+        h = 3
         (tree,node) = cf.findPath(cf.threshold(cf.gray_img), flatten_threshold=0.7, perspective_k = 0.94, vision_k=0.7, min_w=2, max_w=20, h=h, step=1)
         
         find_timer = millis()-last_time
@@ -81,7 +83,7 @@ def main():
                 target_steering = (ls+target_steering)/2
                 target_steering = int(target_steering*1.4)
         sdict = {
-            "speed": 15,
+            "speed": cv2.getTrackbarPos('speed', 'Main'),
             "steering": int(target_steering)
         }
         json = json_.dumps(sdict, sort_keys=True)
