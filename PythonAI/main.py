@@ -61,7 +61,7 @@ def main():
         cf.debug = True
         last_time = millis()
         h = 3
-        (tree,node) = cf.findPath(cf.threshold(cf.gray_img), flatten_threshold=0.7, perspective_k = 0.94, vision_k=0.7, min_w=2, max_w=20, h=h, step=1)
+        (tree, path_node, stop_node) = cf.findPath(cf.threshold(cf.gray_img), flatten_threshold=0.7, perspective_k = 0.94, vision_k=0.7, min_w=4, max_w=15, h=h, step=1)
         
         find_timer = millis()-last_time
 
@@ -76,8 +76,8 @@ def main():
 
         # Send control commands
         target_steering = 0
-        if(node is not None):
-            target_steering = node.c_w
+        if(path_node is not None):
+            target_steering = path_node.c_w
         if(ls is not None):
             for z in range(2):
                 target_steering = (ls+target_steering)/2
@@ -101,7 +101,8 @@ def main():
         cv2.putText(cf.original,'speed:'+state["CurrentSpeed"],(0,20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1,(0,0,0),1,cv2.LINE_AA)
         cv2.putText(cf.original,'steering:'+state["CurrentSteering"],(0,40), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1,(0,0,0),1,cv2.LINE_AA)
         cv2.putText(cf.original,'ms:'+str(find_timer),(0,60), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1,(0,0,0),1,cv2.LINE_AA)
-        cf.reverseDrawPath(cf.original, tree, node, h)
+        cf.reverseDrawPath(cf.original, tree, path_node, h, (255,0,0), (0,100,0))
+        cf.reverseDrawPath(cf.original, tree, stop_node, h, (0,0,255), (0,100,0))
         flag = cf.show("Main", cf.original)
 
         # input()

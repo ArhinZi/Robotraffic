@@ -62,16 +62,16 @@ class ComputerFinder:
                         cv2.line(img,br,p,(255,0,0), thickness=2, lineType=8, shift=0)
 
 
-    def reverseDrawPath(self, img, tree, node, h):
+    def reverseDrawPath(self, img, tree, node, h, segment_color, line_color):
         if(node is not None):
             tl = (node.coords[0]*self.mult, (self.size - node.line - int(h/2))*self.mult-2)
             br = (node.coords[1]*self.mult, (self.size - node.line - int(h/2))*self.mult)
-            cv2.rectangle(img, tl, br, (0,0,255), thickness=2, lineType=8, shift=0)
+            cv2.rectangle(img, tl, br, segment_color, thickness=2, lineType=8, shift=0)
             if(node.parent is not None):
                     parent = tree[node.parent[0]][node.parent[1]]
                     p = (parent.coords[0]*self.mult, (self.size - parent.line - int(h/2))*self.mult-2)
-                    cv2.line(img,br,p,(255,0,0), thickness=2, lineType=8, shift=0)
-                    self.reverseDrawPath(img, tree, parent, h)
+                    cv2.line(img,br,p,line_color, thickness=2, lineType=8, shift=0)
+                    self.reverseDrawPath(img, tree, parent, h, segment_color, line_color)
 
 
             return 0;
@@ -123,7 +123,7 @@ class ComputerFinder:
                         else:
                             width += 1
 
-                    if(line_array[i] == 0):
+                    if(line_array[i] == 0 or i==len(line_array)-1):
                         if(start_x is None):
                             pass
                         else:
@@ -142,7 +142,7 @@ class ComputerFinder:
                         for j in range(n):
                             if(
                                 tree[i][j] is not None and
-                                min_w < child.coords[1]-child.coords[0] < max_w and
+                                min_w < child.coords[1]-child.coords[0] and
                                 tree[i][j].coords[0] < ((child.coords[0]+child.coords[1])/2) < tree[i][j].coords[1] and
                                 tree[i][j].coords[1]-tree[i][j].coords[0] >= child.coords[1]-child.coords[0] and
                                 tree[i][j].line <= child.line
@@ -173,16 +173,50 @@ class ComputerFinder:
 
             tree[0][0].c_w = self.size
             max_i = self.size
-            max_N = None
+            true_last_node = None
             for i in reversed(range(m)):
+                b = False
                 for j in range(n):
-                    if(tree[i][j] is not None and abs(tree[i][j].c_w) < max_i and tree[i][j].childs == [] and tree[i][j].level > 5):
+                    if(
+                       tree[i][j] is not None and 
+                       abs(tree[i][j].c_w) < max_i and 
+                       tree[i][j].childs == [] and 
+                       tree[i][j].level > 6 and
+                       tree[i][j].coords[1]-tree[i][j].coords[0] < max_w
+                       ):
+
                         max_i = abs(tree[i][j].c_w)
-                        max_N = tree[i][j]
+                        true_last_node = tree[i][j]
+                        b = True
+                        break
+                if(b):
+                    break
 
 
+            #finding stop segments of tree
+            true_stop_node = None
+            for i in reversed(range(m)):
+                b = False
+                for j in range(n):
+                    if(
+                       true_last_node is not None and 
+                       tree[i][j] is not None and
+                       tree[i][j].parent is not None and
+                       (tree[i][j].coords[0]+tree[i][j].coords[1])/2>(true_last_node.c_w+self.size/2)>tree[i][j].coords[0] and 
+                       self.size/1.5>(tree[i][j].coords[1]-tree[i][j].coords[0])>max_w
+                       ):
 
-            return (tree, max_N);
+                        true_stop_node = tree[i][j]
+                        b = True
+                        break
+                if(b):
+                    break
+
+            img = self.original.copy()
+            self.drawTree(img, tree, n, m, h)
+            self.show("tree",img)
+
+            return (tree, true_last_node, true_stop_node);
 
 
     def drawPoints(self, img, coords):
